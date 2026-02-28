@@ -1,0 +1,23 @@
+{
+  "name": "@hireclaw/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "push": "drizzle-kit push",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@hireclaw/shared": "workspace:*",
+    "drizzle-orm": "^0.40.0",
+    "pg": "^8.19.0",
+    "postgres": "^3.0.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.30.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,22 @@
+app = "hireclaw-api-staging"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "apps/api/Dockerfile"
+
+[env]
+  NODE_ENV = "staging"
+  PORT = "3000"
+  CORS_ORIGINS = "https://staging.hireclaw.bot"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, develop]
+
+env:
+  IS_PROD: ${{ github.ref == 'refs/heads/main' }}
+
+jobs:
+  deploy-api:
+    name: Deploy API to Fly.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy API
+        run: |
+          if [ "$IS_PROD" = "true" ]; then
+            flyctl deploy --remote-only --config fly.prod.toml
+          else
+            flyctl deploy --remote-only --config fly.staging.toml
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-web:
+    name: Deploy Web to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Deploy to Vercel
+        run: |
+          if [ "$IS_PROD" = "true" ]; then
+            npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+            npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+            npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            npx vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+            npx vercel build --token=${{ secrets.VERCEL_TOKEN }}
+            npx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+          fi
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
