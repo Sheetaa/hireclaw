@@ -138,6 +138,8 @@ feature/*  ──► PR ──► develop  ──► 自动部署 Staging
    | 变量 | Production | Preview |
    |------|-----------|---------|
    | `NEXT_PUBLIC_API_URL` | `https://api.hireclaw.bot` | `https://api-staging.hireclaw.bot` |
+| `STAGING_USER` | - | `your-staging-username` |
+| `STAGING_PASS` | - | `your-strong-staging-password` |
 
 4. 记录以下信息（后续配置到 GitHub Secrets）：
    ```bash
