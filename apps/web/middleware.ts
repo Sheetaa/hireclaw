@@ -1,57 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const STAGING_HOST = 'staging.hireclaw.bot';
-
-function unauthorizedResponse() {
-  return new NextResponse('Authentication required', {
-    status: 401,
-    headers: {
-      'WWW-Authenticate': 'Basic realm="Staging"',
-      'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet, noimageindex',
-    },
-  });
-}
+const COOKIE_NAME = '_stk_auth';
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
 
-  // Only protect staging domain
   if (host !== STAGING_HOST) {
     return NextResponse.next();
   }
 
-  const authHeader = request.headers.get('authorization');
-  const username = process.env.STAGING_USER;
-  const password = process.env.STAGING_PASS;
+  const token = process.env.STAGING_TOKEN;
 
-  // Fail closed if secrets are missing
-  if (!username || !password) {
-    return new NextResponse('Staging credentials are not configured', {
+  // Fail closed
+  if (!token) {
+    return new NextResponse('Staging token not configured', {
       status: 500,
-      headers: {
-        'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet, noimageindex',
-      },
+      headers: { 'X-Robots-Tag': 'noindex, nofollow' },
     });
   }
 
-  if (!authHeader?.startsWith('Basic ')) {
-    return unauthorizedResponse();
+  // Check for magic link token in URL
+  const url = request.nextUrl;
+  const paramToken = url.searchParams.get('_stk');
+
+  if (paramToken === token) {
+    // Strip token from URL and set cookie
+    url.searchParams.delete('_stk');
+    const response = NextResponse.redirect(url);
+    response.cookies.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: COOKIE_MAX_AGE,
+      path: '/',
+    });
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return response;
   }
 
-  const token = authHeader.slice(6).trim();
-  const decoded = Buffer.from(token, 'base64').toString('utf-8');
-  const [inputUser, inputPass] = decoded.split(':');
+  // Check cookie
+  const cookieToken = request.cookies.get(COOKIE_NAME)?.value;
 
-  if (inputUser !== username || inputPass !== password) {
-    return unauthorizedResponse();
+  if (cookieToken === token) {
+    const response = NextResponse.next();
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return response;
   }
 
-  const response = NextResponse.next();
-  response.headers.set(
-    'X-Robots-Tag',
-    'noindex, nofollow, noarchive, nosnippet, noimageindex',
-  );
-  return response;
+  // Unauthorized
+  return new NextResponse('Not authorized. Use your magic link to access staging.', {
+    status: 403,
+    headers: { 'X-Robots-Tag': 'noindex, nofollow' },
+  });
 }
 
 export const config = {
