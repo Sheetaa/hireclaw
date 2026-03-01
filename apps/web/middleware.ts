@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const STAGING_HOST = 'staging.hireclaw.bot';
+const PROTECTED_HOSTS = ['staging.hireclaw.bot', 'hireclaw.bot', 'www.hireclaw.bot'];
 const COOKIE_NAME = '_stk_auth';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
 
-  if (host !== STAGING_HOST) {
+  if (!PROTECTED_HOSTS.includes(host)) {
     return NextResponse.next();
   }
 
